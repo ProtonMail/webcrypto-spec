@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Curve25519 and Curve448 for Web Crypto</title>
+    <meta charset='utf-8'>
+    <script src='https://www.w3.org/Tools/respec/respec-w3c-common'
+            async class='remove'></script>
+    <script class='remove'>
+      var respecConfig = {
+          // specification status (e.g. WD, LCWD, WG-NOTE, etc.). If in doubt use ED.
+          specStatus:           "ED",
+          
+          // the specification's short name, as in http://www.w3.org/TR/short-name/
+          // shortName:            "curve25519-448",
+
+
+          // if there is a previously published draft, uncomment this and set its YYYY-MM-DD date
+          // and its maturity status
+          // previousPublishDate:  "1977-03-15",
+          // previousMaturity:  "WD",
+
+          // if there a publicly available Editor's Draft, this is the link
+          // edDraftURI:           "http://berjon.com/",
+
+          // if this is a LCWD, uncomment and set the end of its review period
+          // lcEnd: "2009-08-05",
+
+          // editors, add as many as you like
+          // only "name" is required
+          editors:  [
+              {
+                  name:       "Ilya Chesnokov"
+              ,   url:        "github.com/chesnokovilya"
+              ,   mailto:     "ilya.chesnokov@protonmail.com"
+              ,   company:    "proton technologies AG"
+              ,   companyURL: "protonmail.com"
+              },
+          ],
+          
+          // name of the WG
+          wg:           "In Charge Of This Document Working Group",
+          
+          // URI of the public WG page
+          wgURI:        "http://example.org/really-cool-wg",
+          
+          // name (without the @w3c.org) of the public mailing to which comments are due
+          wgPublicList: "spec-writers-anonymous",
+          
+          // URI of the patent status for this WG, for Rec-track documents
+          // !!!! IMPORTANT !!!!
+          // This is important for Rec-track documents, do not copy a patent URI from a random
+          // document unless you know what you're doing. If in doubt ask your friendly neighbourhood
+          // Team Contact.
+          // wgPatentURI:  "",
+          // !!!! IMPORTANT !!!! MAKE THE ABOVE BLINK IN YOUR HEAD
+      };
+    </script>
+  </head>
+  <body>
+    <section id='abstract'>
+      <p>
+        Proposal for inclusion of curves 25519 and 448 ECDH and EDDSA algorithms to the Web Cryptography API
+      </p>
+    </section>
+    
+    <section id='sotd'>
+      <p>
+        First draft.
+      </p>
+    </section>
+    
+    <section>
+      <h2>Introduction</h2>
+      <p>
+        Both curves "curve25519" and "curve448" are designed to allow for fast and secure cryptographic operations.
+        For the curve25519, there exists a written proposal, albeit incomplete <a href="https://github.com/trevp/curve25519_webcrypto">https://github.com/trevp/curve25519_webcrypto</a>.
+        There was a formal voting with most votes against this; the main reason was that these curves were not included in the 
+        CFRG or TLS standards (an example vote is here <a href="https://lists.w3.org/Archives/Public/public-webcrypto/2014Aug/0107.html"> https://lists.w3.org/Archives/Public/public-webcrypto/2014Aug/0107.html</a>.
+        Now both curves are included in CFRG standard [<a href="#ref-rfc7748">ref-rfc7748</a>] and in the TLS 1.3 standard [<a href="#ref-rfc8446">ref-rfc8446</a>], 
+        therefore, it seems that including these curves now in the web crypto API is a reasonable choice.
+        Both of them are Montgomery curves and have birationally equivalent Edwards versions, that leads to adoption EdDSA
+        (Edwards-curve Digital Signature Algorithm [<a href="#ref-ed25519">ref-ed25519</a>]) as signature algorithm.
+      </p>
+    </section>
+
+
+
+
+
+
+    <section id="ecdh">
+      <h3>ECDH</h3>
+     
+    </section>
+
+    <section id="eddsa">
+        <h3>EDDSA</h3>
+       
+      </section>
+    
+    <section class='appendix'>
+      <h2>Acknowledgements</h2>
+      <p>
+       
+      </p>
+
+
+    </section>
+    <section class='appendix'>
+      <h2> References</h2>
+      <dl>
+          <dd>
+              [<a name="ref-rfc8446" id="ref-rfc8446">rfc8446</a>] The Transport Layer Security (TLS) Protocol Version 1.3 
+              &lt;<a href="https://tools.ietf.org/html/rfc8446">https://tools.ietf.org/html/rfc8446</a>&gt;
+          </dd>
+          <dd>
+              [<a name="ref-rfc7748" id="ref-rfc7748">rfc7748</a>] Crypto Forum Research Group Draft RFC 7748 
+              &lt;<a href="https://tools.ietf.org/html/rfc7748">https://tools.ietf.org/html/rfc7748</a>&gt;
+          </dd>
+          <dd>
+            [<a name="ref-ed25519" id="ref-ed25519">ed25519</a>]  Bernstein, D., Duif, N., Lange, T., Schwabe, P., and B.
+            Yang, "High-Speed High-Security Signatures", 2011,
+            &lt;<a href="http://link.springer.com/chapter/10.1007/978-3-642-23951-9_9">http://link.springer.com/</a>
+            <a href="http://link.springer.com/chapter/10.1007/978-3-642-23951-9_9">chapter/10.1007/978-3-642-23951-9_9</a>&gt;.
+          </dd>
+          <dd>
+            [<a name="ref-goldilocks" id="ref-goldilocks">goldilocks</a>]
+            Hamburg, M., "Ed448-Goldilocks, a new elliptic curve",
+            2015, &lt;<a href="http://eprint.iacr.org/2015/625.pdf">http://eprint.iacr.org/2015/625.pdf</a>&gt;.
+          </dd>
+      </dl>
+    </section>
+  </body>
+</html>
