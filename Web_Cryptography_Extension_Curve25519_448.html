@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Curve25519 and Curve448 for Web Crypto</title>
+    <title>Curve25519 and Curve448 for Web Cryptography API</title>
     <meta charset='utf-8'>
     <script src='https://www.w3.org/Tools/respec/respec-w3c-common'
             async class='remove'></script>
@@ -11,7 +11,7 @@
           specStatus:           "ED",
           
           // the specification's short name, as in http://www.w3.org/TR/short-name/
-          // shortName:            "curve25519-448",
+          shortName:            "webcrypto-curve25519-448",
 
 
           // if there is a previously published draft, uncomment this and set its YYYY-MM-DD date
@@ -55,6 +55,7 @@
           // !!!! IMPORTANT !!!! MAKE THE ABOVE BLINK IN YOUR HEAD
       };
     </script>
+    <link rel="stylesheet" href="https://www.w3.org/StyleSheets/TR/2016/W3C-REC" type="text/css"></head>
   </head>
   <body>
     <section id='abstract'>
@@ -73,30 +74,466 @@
       <h2>Introduction</h2>
       <p>
         Both curves "curve25519" and "curve448" are designed to allow for fast and secure cryptographic operations.
-        For the curve25519, there exists a written proposal, albeit incomplete <a href="https://github.com/trevp/curve25519_webcrypto">https://github.com/trevp/curve25519_webcrypto</a>.
-        There was a formal voting with most votes against this; the main reason was that these curves were not included in the 
-        CFRG or TLS standards (an example vote is here <a href="https://lists.w3.org/Archives/Public/public-webcrypto/2014Aug/0107.html"> https://lists.w3.org/Archives/Public/public-webcrypto/2014Aug/0107.html</a>.
-        Now both curves are included in CFRG standard [<a href="#ref-rfc7748">ref-rfc7748</a>] and in the TLS 1.3 standard [<a href="#ref-rfc8446">ref-rfc8446</a>], 
+        They are included in CFRG standard [<a href="#ref-rfc7748">ref-rfc7748</a>] and in the TLS 1.3 standard [<a href="#ref-rfc8446">ref-rfc8446</a>], 
         therefore, it seems that including these curves now in the web crypto API is a reasonable choice.
         Both of them are Montgomery curves and have birationally equivalent Edwards versions, that leads to adoption EdDSA
         (Edwards-curve Digital Signature Algorithm [<a href="#ref-ed25519">ref-ed25519</a>]) as signature algorithm.
       </p>
     </section>
 
+    <section id="Naming">
+      <h4>Curve names</h4>
+      Following names are proposed for use: X25519 for the curve 25519 ECDH operation, and ED25519 for EDDSA operation. X448 for the curve 448 ECDH, and ED448 for EDDSA. This scheme is following convention from TLS standards.
+      This would update existing EcKeyParams dictionary <a href="https://www.w3.org/TR/WebCryptoAPI/#EcKeyGenParams-dictionary">https://www.w3.org/TR/WebCryptoAPI/#EcKeyGenParams-dictionary</a>.
+      <div id="EcKeyGenParams-dictionary" class="section">
+        <h4>EcKeyGenParams dictionary</h4>
+        <div class="block"><div class="blockTitleDiv"><span class="blockTitle">IDL</span></div><div class="blockContent"><pre class="code">
+          <code class="idl-code">
+typedef DOMString;
+
+dictionary <dfn id="dfn-EcKeyGenParams">EcKeyGenParams</dfn> : <a href="#dfn-Algorithm">Algorithm</a> {
+<span class="comment">// A named curve</span>
+required <a href="#dfn-NamedCurve">NamedCurve</a> <dfn id="dfn-EcKeyGenParams-namedCurve">namedCurve</dfn>;
+};
+        </code></pre></div></div>
+        <p>
+          The <dfn id="dfn-NamedCurve">NamedCurve</dfn> type represents named elliptic curves,
+          which are a convenient way to specify the domain parameters of well-known elliptic
+          curves. The following values defined by this specification:
+        </p>
+        <dl>
+          <dt id="dfn-NamedCurve-x25519"><code>"X25519"</code></dt>
+          <dd>ECDH algorithm for curve 25519</dd>
+          <dt id="dfn-NamedCurve-x448"><code>"X448"</code></dt>
+          <dd>ECDH algorithm for curve 448</dd>
+          <dt id="dfn-NamedCurve-ed25519"><code>"ED25519"</code></dt>
+          <dd>EDDSA algorithm for curve 25519</dd>
+          <dt id="dfn-NamedCurve-ed448"><code>"ED448"</code></dt>
+          <dd>EDDSA algorithm for curve 448</dd>
+        </dl>
+      </div>
+    </section> 
 
 
+    <section id="eddsa">
+      <h3>EDDSA</h3>
+      The "EDDSA" algorithm identifier is used to perform signing and verification using the EDDSA algorithm specified in [<a href="#ref-rfc8032">rfc8032</a>] 
+      and using the SHA512 and SHAKE256 hash functions and elliptic curves defined in this specification. 
+      <div id="eddsa-registration" class="section">
+        <h4> Registration</h4>
+        <p>
+          The <a href="#recognized-algorithm-name">recognized algorithm name</a> for
+          this algorithm is <code>"EDDSA"</code>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th><a href="#supported-operations">Operation</a></th>
+              <th><a href="#algorithm-specific-params">Parameters</a></th>
+              <th><a href="#algorithm-result">Result</a></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>sign</td>
+              <td><a href="#dfn-EcdsaParams">EddsaParams</a></td>
+              <td><a href="#dfn-ArrayBuffer">ArrayBuffer</a></td>
+            </tr>
+            <tr>
+              <td>verify</td>
+              <td><a href="#dfn-EcdsaParams">EddsaParams</a></td>
+              <td>boolean</td>
+            </tr>
+            <tr>
+              <td>generateKey</td>
+              <td><a href="#dfn-EcKeyGenParams">EcKeyGenParams</a></td>
+              <td><a href="#dfn-CryptoKeyPair">CryptoKeyPair</a></td>
+            </tr>
+            <tr>
+              <td>importKey</td>
+              <td><a href="#dfn-EcKeyImportParams">EcKeyImportParams</a></td>
+              <td><a href="#dfn-CryptoKey">CryptoKey</a></td>
+            </tr>
+            <tr>
+              <td>exportKey</td>
+              <td>None</td>
+              <td>object</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+      <div id="EddsaParams-dictionary" class="section">
+        <h4>EddsaParams dictionary</h4>
+        <div class="block"><div class="blockTitleDiv"><span class="blockTitle">IDL</span></div><div class="blockContent"><pre class="code"><code class="idl-code">
+dictionary <dfn id="dfn-EddsaParams">EddsaParams</dfn> : <a href="#dfn-Algorithm">Algorithm</a> {
+<span class="comment">// The hash algorithm to use</span>
+required <a href="#dfn-HashAlgorithmIdentifier">HashAlgorithmIdentifier</a> <dfn id="dfn-EddsaParams-hash">hash</dfn>;
+};
+        </code></pre></div></div>
+      </div>
+      <div id="eddsa-operations" class="section">
+      <h4>Operations</h4>
+      <dl>
+        <dt>Sign</dt>
+        <dd>
+          When signing, the following algorithm should be used:
+          <ol>
+            <li>
+              <p>
+                If the [[<a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-CryptoKey-slot-type">type</a>]] internal slot of
+                <var>key</var> is not <code>"private"</code>, then <a href="https://www.w3.org/TR/WebCryptoAPI/#concept-throw">throw</a> an <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-InvalidAccessError"><code>InvalidAccessError</code></a>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Let <var>hashAlgorithm</var> be the <a href="#dfn-EddsaParams-hash">hash</a>
+                member of <var>normalizedAlgorithm</var>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Let <var>M</var> be the result of performing the digest operation specified by
+                <var>hashAlgorithm</var> using <var>message</var>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Let <var>d</var> be the EDDSA private key associated with <var>key</var>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Let <var>params</var> be the EC domain parameters associated with
+                <var>key</var>.
+              </p>
+            </li>
+            <li>
+              <dl class="switch">
+                <dt>
+                  If the <a href="#dfn-EcKeyAlgorithm-namedCurve">namedCurve</a> attribute of the
+                  [[<a href="#dfn-CryptoKey-slot-algorithm">algorithm</a>]] internal slot of
+                  <var>key</var> is <code>"ED25519"</code>, <code>"ED448"</code>:
+                </dt>
+                <dd>
+                  <ol>
+                    <li>
+                      <p>
+                        Perform the EDDSA signing process, as specified in <a href="#ref-rfc8032">rfc8032</a>,
+                        Section 5.1.6, with <var>M</var> as the message, using <var>params</var> as the
+                        EC domain parameters, and with <var>d</var> as the private key.
+                      </p>
+                    </li>
+                    <li>
+                      <p>
+                      Let <var>r</var> and <var>s</var> be the pair of integers resulting from
+                      performing the EDDSA signing process.
+                      </p>
+                    </li>
+                    <li>
+                      <p>
+                        Let <var>result</var> be a new empty <a href="#dfn-ArrayBuffer">ArrayBuffer</a> associated with the
+                        <a href="https://www.w3.org/TR/html51/webappapis.html#relevant-global-object">relevant global object</a>
+                        of <code>this</code> [<a href="#HTML">HTML</a>].
+                      </p>
+                    </li>
+                    <li>
+                      <p>
+                        Let <var>n</var> be 32 for curve 25519, and 57 for curve 448.
+                      </p>
+                    </li>
+                    <li>
+                      <p>
+                        <a href="#dfn-convert-integer-to-octet-string">Convert <var>r</var> to an litle-endian octet string of
+                        length <var>n</var></a> and append this sequence of bytes to <var>result</var>.
+                      </p>
+                    </li>
+                    <li>
+                      <p>
+                        <a href="#dfn-convert-integer-to-octet-string">Convert <var>s</var> to an litle-endian octet string of
+                        length <var>n</var></a> and append this sequence of bytes to <var>result</var> (three(curve 25519) or 10(curve448) most
+                        significant bits of the final octet are always zero).
+                      </p>
+                    </li>
+                  </ol>
+                </dd>
+              </dl>
+            </li>
+            <li>
+              <p>
+                Return a new <a href="#dfn-ArrayBuffer">ArrayBuffer</a> associated with the
+                <a href="https://www.w3.org/TR/html51/webappapis.html#relevant-global-object">relevant global object</a>
+                of <code>this</code> [<a href="#HTML">HTML</a>], and containing the
+                bytes of <var>result</var>.
+              </p>
+            </li>
+          </ol>
+        </dd>
+      <dt>Verify</dt>
+      <dd>
+        When verifying, the following algorithm should be used:
+        <ol>
+          <li>
+            <p>
+              If the [[<a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-CryptoKey-slot-type">type</a>]] internal slot of
+              <var>key</var> is not <code>"public"</code>, then <a href="https://www.w3.org/TR/WebCryptoAPI/#concept-throw">throw</a> an <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-InvalidAccessError"><code>InvalidAccessError</code></a>.
+            </p>
+          </li>
+          <li>
+            <p>
+              Let <var>hashAlgorithm</var> be the <a href="#dfn-EddsaParams-hash">hash</a>
+              member of
+              <var>normalizedAlgorithm</var>.
+            </p>
+          </li>
+          <li>
+            <p>
+              Let <var>M</var> be the result of performing the digest operation specified by
+              <var>hashAlgorithm</var> using <var>message</var>.
+            </p>
+          </li>
+          <li>
+            <p>
+              Let <var>Q</var> be the EDDSA public key associated with <var>key</var>.
+            </p>
+          </li>
+          <li>
+            <p>
+              Let <var>params</var> be the EC domain parameters associated with
+              <var>key</var>.
+            </p>
+          </li>
+          <li>
+            <dl class="switch">
+              <dt>
+                If the <a href="#dfn-EcKeyAlgorithm-namedCurve">namedCurve</a> attribute of the
+                [[<a href="#dfn-CryptoKey-slot-algorithm">algorithm</a>]] internal slot of
+                <var>key</var> is <code>"ED25519"</code>, <code>"ED448"</code>:
+              </dt>
+              <dd>
+                <p>
+                  Perform the EDDSA verifying process, as specified in <a href="#ref-rfc8032">rfc8032</a>, Section 5.1.7, with <var>M</var> as the received
+                  message, <var>signature</var> as the received signature and using
+                  <var>params</var> as the EC domain parameters, and 
+                  <var>Q</var> as the public key.
+                </p>
+              </dd>
+              <dt>
+                Otherwise, the <a href="#dfn-EcKeyAlgorithm-namedCurve">namedCurve</a> attribute
+                of the [[<a href="#dfn-CryptoKey-slot-algorithm">algorithm</a>]] internal slot of
+                <var>key</var> is a value specified in an
+                <a href="#dfn-applicable-specification">applicable specification</a>:
+              </dt>
+              <dd>
+                <p>
+                  Perform the <a href="#dfn-eddsa-extended-verification-steps">EDDSA verification steps</a>
+                  specified in that specification passing in <var>M</var>, <var>signature</var>,
+                  <var>params</var> and <var>Q</var> and resulting in an indication of whether
+                  or not the purported signature is valid.
+                </p>
+              </dd>
+            </dl>
+          </li>
+          <li>
+            <p>
+              Let <var>result</var> be a boolean with the value <code>true</code> if the signature is valid
+              and the value <code>false</code> otherwise.
+            </p>
+          </li>
+          <li>
+            <p>
+              Return <var>result</var>.
+            </p>
+          </li>
+        </ol>
+      </dd>
+    </section>
 
 
 
     <section id="ecdh">
       <h3>ECDH</h3>
+      <div id="ecdh-description">
+        <h4>Description</h4>
+        This section describes using Elliptic Curve Diffie-Hellman (ECDH) algorithm for key generation and key
+            agreement for two curves curve 25519 [<a href="#ref-ed25519">ref-ed25519</a>] and curve 448  [<a href="#ref-goldilocks">ref-goldilocks</a>]. 
+            To specify elliptic curve one need to provide (per web cryptography specification):  curve name, ECDH generation steps, ECDH derivation steps, ECDH key import steps and ECDH key export steps. 
+      </div>
+
+ 
+
+      <div id="ecdh-generation">
+        <h4>ECDH key generation</h4>
+        Generate key function interface would be unchanged from already existing one, except for addition of new curve names.
+        <dt>Generate Key</dt>
+        <dd>
+          <ol>
+            <li>
+              <p>
+                If <var>usages</var> contains an entry which is not
+                <code>"deriveKey"</code> or <code>"deriveBits"</code>
+                then <a href="https://www.w3.org/TR/WebCryptoAPI/#concept-throw">throw</a> a
+                <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-SyntaxError"><code>SyntaxError</code></a>.
+              </p>
+            </li>
+            <li>
+              <dl class="switch">
+                <dt>
+                  If the <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-EcKeyGenParams-namedCurve">namedCurve</a> member of
+                  <var>normalizedAlgorithm</var> is <code>"X25519"</code> or <code>"X448"</code>:
+                </dt>
+                <dd>
+                  <p>
+                    Generate an Elliptic Curve key pair, as defined in [<a href="#RFC6090">RFC6090</a>] with domain parameters for the curve identified by
+                    the <a href="#dfn-EcKeyGenParams-namedCurve">namedCurve</a> member of
+                    <var>normalizedAlgorithm</var>.
+                  </p>
+                </dd>
+                <dt>
+                  If the <a href="#dfn-EcKeyGenParams-namedCurve">namedCurve</a> member of
+                  <var>normalizedAlgorithm</var> is a value specified in an
+                  <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-applicable-specification">applicable specification</a> that
+                  specifies the use of that value with ECDH:
+                </dt>
+                <dd>
+                  <p>
+                    Perform the <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-ecdh-extended-generation-steps">ECDH key
+                    generation steps</a> specified in that specification, passing in
+                    <var>normalizedAlgorithm</var> and resulting in an elliptic curve key pair.
+                  </p>
+                </dd>
+                <dt>Otherwise:</dt>
+                <dd>
+                  <p>
+                    <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-ecdh-extended-generation-steps#concept-throw">throw</a> a
+                    <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-ecdh-extended-generation-steps#dfn-OperationError"><code>NotSupportedError</code></a>
+                  </p>
+                </dd>
+              </dl>
+            </li>
+            <li>
+              <p>
+                If performing the operation results in an error,
+                then <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-ecdh-extended-generation-steps#concept-throw">throw</a> a
+                <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-ecdh-extended-generation-steps#dfn-OperationError"><code>OperationError</code></a>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Let <var>algorithm</var> be a new
+                <a href="#dfn-EcKeyAlgorithm">EcKeyAlgorithm</a>
+                object.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the <a href="#dfn-Algorithm-name">name</a> member of
+                <var>algorithm</var> to <code>"ECDH"</code>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the <a href="#dfn-EcKeyAlgorithm-namedCurve">namedCurve</a>
+                attribute of <var>algorithm</var> to equal the
+                <a href="#dfn-EcKeyGenParams">namedCurve</a> member of
+                <var>normalizedAlgorithm</var>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Let <var>publicKey</var> be a new <a href="#dfn-CryptoKey">CryptoKey</a> associated with the
+                <a href="https://www.w3.org/TR/html51/webappapis.html#relevant-global-object">relevant global object</a>
+                of <code>this</code> [<a href="#HTML">HTML</a>], and 
+                representing the public key of the generated key pair.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the [[<a href="#dfn-CryptoKey-slot-type">type</a>]] internal slot of
+                <var>publicKey</var> to <code>"public"</code>
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the [[<a href="#dfn-CryptoKey-slot-algorithm">algorithm</a>]] internal
+                slot of <var>publicKey</var> to <var>algorithm</var>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the [[<a href="#dfn-CryptoKey-slot-extractable">extractable</a>]] internal
+                slot of <var>publicKey</var> to true.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the [[<a href="#dfn-CryptoKey-slot-usages">usages</a>]] internal slot of
+                <var>publicKey</var> to be the empty list.
+              </p>
+            </li>
+            <li>
+              <p>
+                Let <var>privateKey</var> be a new <a href="#dfn-CryptoKey">CryptoKey</a> associated with the
+                <a href="https://www.w3.org/TR/html51/webappapis.html#relevant-global-object">relevant global object</a>
+                of <code>this</code> [<a href="#HTML">HTML</a>], and 
+                representing the private key of the generated key pair.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the [[<a href="#dfn-CryptoKey-slot-type">type</a>]] internal slot of
+                <var>privateKey</var> to <code>"private"</code>
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the [[<a href="#dfn-CryptoKey-slot-algorithm">algorithm</a>]] internal
+                slot of <var>privateKey</var> to <var>algorithm</var>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the [[<a href="#dfn-CryptoKey-slot-extractable">extractable</a>]] internal
+                slot of <var>privateKey</var> to <var>extractable</var>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the [[<a href="#dfn-CryptoKey-slot-usages">usages</a>]] internal slot of
+                <var>privateKey</var> to be the
+                <a href="#concept-usage-intersection">usage intersection</a> of
+                <var>usages</var> and <code>[ "deriveKey", "deriveBits" ]</code>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Let <var>result</var> be a new <a href="#dfn-CryptoKeyPair">CryptoKeyPair</a>
+                dictionary.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the <a href="#dfn-CryptoKeyPair-publicKey">publicKey</a> attribute
+                of <var>result</var> to be <var>publicKey</var>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Set the <a href="#dfn-CryptoKeyPair-privateKey">privateKey</a> attribute
+                of <var>result</var> to be <var>privateKey</var>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Return the result of converting <var>result</var> to an ECMAScript Object, as
+                defined by [<a href="https://www.w3.org/TR/WebIDL-1/">WebIDL</a>].
+              </p>
+            </li>
+          </ol>
+        </dd>
+      </div> 
      
     </section>
-
-    <section id="eddsa">
-        <h3>EDDSA</h3>
-       
-      </section>
     
     <section class='appendix'>
       <h2>Acknowledgements</h2>
@@ -110,24 +547,50 @@
       <h2> References</h2>
       <dl>
           <dd>
-              [<a name="ref-rfc8446" id="ref-rfc8446">rfc8446</a>] The Transport Layer Security (TLS) Protocol Version 1.3 
-              &lt;<a href="https://tools.ietf.org/html/rfc8446">https://tools.ietf.org/html/rfc8446</a>&gt;
+              <dt id="ref-web-crypto">web-crypto</dt>
+              <dd>
+                <cite> Web Cryptography API
+                &lt;<a href="https://www.w3.org/TR/WebCryptoAPI/">https://www.w3.org/TR/WebCryptoAPI/</a>&gt;</cite>
+              </dd>
           </dd>
           <dd>
-              [<a name="ref-rfc7748" id="ref-rfc7748">rfc7748</a>] Crypto Forum Research Group Draft RFC 7748 
-              &lt;<a href="https://tools.ietf.org/html/rfc7748">https://tools.ietf.org/html/rfc7748</a>&gt;
+            <dt id="ref-rfc8446">rfc8446</dt>
+            <dd>
+              <cite>The Transport Layer Security (TLS) Protocol Version 1.3 
+              &lt;<a href="https://tools.ietf.org/html/rfc8446">https://tools.ietf.org/html/rfc8446</a>&gt;</cite>
+            </dd>
           </dd>
           <dd>
-            [<a name="ref-ed25519" id="ref-ed25519">ed25519</a>]  Bernstein, D., Duif, N., Lange, T., Schwabe, P., and B.
+            <dt id="ref-rfc7748">rfc7748</dt>
+            <dd>
+              <cite>Crypto Forum Research Group Draft RFC 7748 
+              &lt;<a href="https://tools.ietf.org/html/rfc7748">https://tools.ietf.org/html/rfc7748</a>&gt;</cite>
+            </dd>
+          </dd>
+          <dd>
+            <dt id="ref-rfc8032">rfc8032</dt>
+            <dd>
+              <cite> Edwards-Curve Digital Signature Algorithm (EdDSA) 
+              &lt;<a href="https://tools.ietf.org/html/rfc8032">https://tools.ietf.org/html/rfc8032</a>&gt;</cite>
+            </dd>
+          </dd>
+          <dd>
+            <dt id="ref-ed25519">ed25519</dt>
+            <dd>
+            <cite>Bernstein, D., Duif, N., Lange, T., Schwabe, P., and B.
             Yang, "High-Speed High-Security Signatures", 2011,
             &lt;<a href="http://link.springer.com/chapter/10.1007/978-3-642-23951-9_9">http://link.springer.com/</a>
-            <a href="http://link.springer.com/chapter/10.1007/978-3-642-23951-9_9">chapter/10.1007/978-3-642-23951-9_9</a>&gt;.
+            <a href="http://link.springer.com/chapter/10.1007/978-3-642-23951-9_9">chapter/10.1007/978-3-642-23951-9_9</a>&gt;.</cite>
+            </dd>
           </dd>
           <dd>
-            [<a name="ref-goldilocks" id="ref-goldilocks">goldilocks</a>]
-            Hamburg, M., "Ed448-Goldilocks, a new elliptic curve",
-            2015, &lt;<a href="http://eprint.iacr.org/2015/625.pdf">http://eprint.iacr.org/2015/625.pdf</a>&gt;.
+            <dt id="ref-goldilocks">goldilocks</dt>
+            <dd>
+            <cite>Hamburg, M., "Ed448-Goldilocks, a new elliptic curve",
+            2015, &lt;<a href="http://eprint.iacr.org/2015/625.pdf">http://eprint.iacr.org/2015/625.pdf</a>&gt;.</cite>
           </dd>
+          </dd>
+
       </dl>
     </section>
   </body>
