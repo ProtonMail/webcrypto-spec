@@ -33,7 +33,7 @@
               ,   url:        "github.com/chesnokovilya"
               ,   mailto:     "ilya.chesnokov@protonmail.com"
               ,   company:    "proton technologies AG"
-              ,   companyURL: "protonmail.com"
+              ,   companyURL: "https://protonmail.com"
               },
           ],
           
@@ -78,15 +78,14 @@
         therefore, it seems that including these curves now in the web crypto API is a reasonable choice.
         Both of them are Montgomery curves and have birationally equivalent Edwards versions, that leads to adoption EdDSA
         (Edwards-curve Digital Signature Algorithm [<a href="#ref-ed25519">ref-ed25519</a>]) as signature algorithm.
+        To specify elliptic curve one need to provide (per web cryptography specification):  
+        curve name,  sign and verify operations, key generation operation, ECDH derivation operation, key import and key export operations.
       </p>
-    </section>
-
-    <section id="Naming">
-      <h4>Curve names</h4>
+      <h3> Curve names</h3>
       Following names are proposed for use: X25519 for the curve 25519 ECDH operation, and ED25519 for EDDSA operation. X448 for the curve 448 ECDH, and ED448 for EDDSA. This scheme is following convention from TLS standards.
       This would update existing EcKeyParams dictionary <a href="https://www.w3.org/TR/WebCryptoAPI/#EcKeyGenParams-dictionary">https://www.w3.org/TR/WebCryptoAPI/#EcKeyGenParams-dictionary</a>.
       <div id="EcKeyGenParams-dictionary" class="section">
-        <h4>EcKeyGenParams dictionary</h4>
+        <h3>EcKeyGenParams dictionary</h3>
         <div class="block"><div class="blockTitleDiv"><span class="blockTitle">IDL</span></div><div class="blockContent"><pre class="code">
           <code class="idl-code">
 typedef DOMString;
@@ -120,7 +119,7 @@ required <a href="#dfn-NamedCurve">NamedCurve</a> <dfn id="dfn-EcKeyGenParams-na
       The "EDDSA" algorithm identifier is used to perform signing and verification using the EDDSA algorithm specified in [<a href="#ref-rfc8032">rfc8032</a>] 
       and using the SHA512 and SHAKE256 hash functions and elliptic curves defined in this specification. 
       <div id="eddsa-registration" class="section">
-        <h4> Registration</h4>
+        <h4>2.1 Registration</h4>
         <p>
           The <a href="#recognized-algorithm-name">recognized algorithm name</a> for
           this algorithm is <code>"EDDSA"</code>.
@@ -164,7 +163,7 @@ required <a href="#dfn-NamedCurve">NamedCurve</a> <dfn id="dfn-EcKeyGenParams-na
         </table>
       </div>
       <div id="EddsaParams-dictionary" class="section">
-        <h4>EddsaParams dictionary</h4>
+        <h4>2.2. EddsaParams dictionary</h4>
         <div class="block"><div class="blockTitleDiv"><span class="blockTitle">IDL</span></div><div class="blockContent"><pre class="code"><code class="idl-code">
 dictionary <dfn id="dfn-EddsaParams">EddsaParams</dfn> : <a href="#dfn-Algorithm">Algorithm</a> {
 <span class="comment">// The hash algorithm to use</span>
@@ -173,7 +172,7 @@ required <a href="#dfn-HashAlgorithmIdentifier">HashAlgorithmIdentifier</a> <dfn
         </code></pre></div></div>
       </div>
       <div id="eddsa-operations" class="section">
-      <h4>Operations</h4>
+      <h4>2.3. Operations</h4>
       <dl>
         <dt>Sign</dt>
         <dd>
@@ -251,8 +250,8 @@ required <a href="#dfn-HashAlgorithmIdentifier">HashAlgorithmIdentifier</a> <dfn
                     <li>
                       <p>
                         <a href="#dfn-convert-integer-to-octet-string">Convert <var>s</var> to an litle-endian octet string of
-                        length <var>n</var></a> and append this sequence of bytes to <var>result</var> (three(curve 25519) or 10(curve448) most
-                        significant bits of the final octet are always zero).
+                        length <var>n</var></a> and append this sequence of bytes to <var>result</var> . Three (curve 25519) or 10 (curve448) most
+                        significant bits of the final octet are always zero.
                       </p>
                     </li>
                   </ol>
@@ -284,6 +283,14 @@ required <a href="#dfn-HashAlgorithmIdentifier">HashAlgorithmIdentifier</a> <dfn
               Let <var>hashAlgorithm</var> be the <a href="#dfn-EddsaParams-hash">hash</a>
               member of
               <var>normalizedAlgorithm</var>.
+            </p>
+          </li>
+          <li>
+            <p>
+              Let <var>signature</var> be the result of
+              <a href="http://heycam.github.io/webidl/#dfn-get-buffer-source-copy">
+              getting a copy of the bytes held by</a> the <code>signature</code> parameter passed to the
+              <a href="#dfn-SubtleCrypto-method-verify">verify</a> method.
             </p>
           </li>
           <li>
@@ -352,19 +359,55 @@ required <a href="#dfn-HashAlgorithmIdentifier">HashAlgorithmIdentifier</a> <dfn
 
 
     <section id="ecdh">
-      <h3>ECDH</h3>
+      <h3>ECDH with curve 25519 and curve 448</h3>
       <div id="ecdh-description">
-        <h4>Description</h4>
         This section describes using Elliptic Curve Diffie-Hellman (ECDH) algorithm for key generation and key
-            agreement for two curves curve 25519 [<a href="#ref-ed25519">ref-ed25519</a>] and curve 448  [<a href="#ref-goldilocks">ref-goldilocks</a>]. 
-            To specify elliptic curve one need to provide (per web cryptography specification):  curve name, ECDH generation steps, ECDH derivation steps, ECDH key import steps and ECDH key export steps. 
+        agreement for two curves curve 25519 [<a href="#ref-ed25519">ref-ed25519</a>] and curve 448  [<a href="#ref-goldilocks">ref-goldilocks</a>]. 
+      </div>
+      <div id="ecdh-registration" class="section">
+        <h4>3.1 Registration</h4>
+        <p>
+          The <a href="#recognized-algorithm-name">recognized algorithm name</a> for
+          this algorithm is <code>"ECDH"</code>.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th><a href="#supported-operations">Operation</a></th>
+              <th><a href="#algorithm-specific-params">Parameters</a></th>
+              <th><a href="#algorithm-result">Result</a></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>generateKey</td>
+              <td><a href="#dfn-EcKeyGenParams">EcKeyGenParams</a></td>
+              <td><a href="#dfn-CryptoKeyPair">CryptoKeyPair</a></td>
+            </tr>
+            <tr>
+              <td>deriveBits</td>
+              <td><a href="#dfn-EcdhKeyDeriveParams">EcdhKeyDeriveParams</a></td>
+              <td><a href="#dfn-octet-string">Octet string</a></td>
+            </tr>
+            <tr>
+              <td>importKey</td>
+              <td><a href="#dfn-EcKeyImportParams">EcKeyImportParams</a></td>
+              <td><a href="#dfn-CryptoKey">CryptoKey</a></td>
+            </tr>
+            <tr>
+              <td>exportKey</td>
+              <td>None</td>
+              <td>object</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
  
 
       <div id="ecdh-generation">
-        <h4>ECDH key generation</h4>
-        Generate key function interface would be unchanged from already existing one, except for addition of new curve names.
+        <h4>3.2. ECDH key generation</h4>
+        This section
         <dt>Generate Key</dt>
         <dd>
           <ol>
@@ -384,21 +427,15 @@ required <a href="#dfn-HashAlgorithmIdentifier">HashAlgorithmIdentifier</a> <dfn
                 </dt>
                 <dd>
                   <p>
-                    Generate an Elliptic Curve key pair, as defined in [<a href="#RFC6090">RFC6090</a>] with domain parameters for the curve identified by
+                    Generate an Elliptic Curve key pair, as defined in [<a href="#RFC7748">RFC7748</a>] with domain parameters for the curve identified by
                     the <a href="#dfn-EcKeyGenParams-namedCurve">namedCurve</a> member of
                     <var>normalizedAlgorithm</var>.
                   </p>
                 </dd>
-                <dt>
-                  If the <a href="#dfn-EcKeyGenParams-namedCurve">namedCurve</a> member of
-                  <var>normalizedAlgorithm</var> is a value specified in an
-                  <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-applicable-specification">applicable specification</a> that
-                  specifies the use of that value with ECDH:
-                </dt>
                 <dd>
                   <p>
-                    Perform the <a href="https://www.w3.org/TR/WebCryptoAPI/#dfn-ecdh-extended-generation-steps">ECDH key
-                    generation steps</a> specified in that specification, passing in
+                    Perform the ECDH key
+                    generation steps specified in that specification, passing in
                     <var>normalizedAlgorithm</var> and resulting in an elliptic curve key pair.
                   </p>
                 </dd>
